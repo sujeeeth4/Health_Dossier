@@ -1,19 +1,51 @@
 import Link from "next/link";
-import { ArrowRight, Check, ChevronRight, FileHeart, FileText, FolderOpen, HeartPulse, Search, ShieldCheck, Sparkles, UploadCloud } from "lucide-react";
+import { ArrowDown, ArrowRight, FileText, Search, Download } from "lucide-react";
 import { Brand } from "@/components/brand";
+import { DossierIllustration } from "@/components/dossier-illustration";
 import { ThemeToggle } from "@/components/theme-toggle";
 
+const features = [
+  { number: "01", icon: FileText, title: "The papers you keep meaning to sort.", description: "Prescriptions, lab results, scans, and care notes. Give each one a name and a date, and keep them together." },
+  { number: "02", icon: Search, title: "That report from a few years ago.", description: "Find a record by its title, your doctor’s name, or a note you remember. A little detail now saves a long search later." },
+  { number: "03", icon: Download, title: "The original, whenever you need it.", description: "Open the actual document, check a detail, or download a copy before your next visit." },
+];
+
 export default function Home() {
-  return <main className="landing">
-    <header className="site-header wrap"><Brand/><nav className="landing-nav" aria-label="Main navigation"><a href="#benefits">Why Health Dossier</a><a href="#how-it-works">How it works</a></nav><div className="header-actions"><ThemeToggle compact/><Link className="button button-outline" href="/signup">Get started <ArrowRight size={17}/></Link></div></header>
-    <section className="hero wrap">
-      <div className="hero-copy"><span className="eyebrow"><span className="eyebrow-dot"/> A CLEARER WAY TO KEEP YOUR HEALTH STORY</span><h1>Every record.<br/>One place.<br/><em>More peace of mind.</em></h1><p>From a routine blood test to the report you need years later, Health Dossier gives your medical documents a place that feels organized and easy to use.</p><div className="hero-actions"><Link className="button button-primary" href="/signup">Get started <ArrowRight size={18}/></Link><a className="hero-text-link" href="#how-it-works">See how it works <ChevronRight size={18}/></a></div></div>
-      <div className="hero-visual" aria-label="Illustration of an organized medical record"><div className="visual-orbit"/><div className="illustration-card"><div className="illustration-top"><span className="illustration-icon"><FolderOpen size={24}/></span><span>YOUR HEALTH DOSSIER</span><span className="illustration-check"><Check size={16}/></span></div><h2>Ready when you need it.</h2><p className="illustration-subtitle">The right document, without the search.</p><div className="illustration-row"><span className="illustration-file blue"><FileText size={20}/></span><div><b>Annual health check</b><small>Laboratory report · 21 Aug 2026</small></div><span className="illustration-row-check"><Check size={14}/></span></div><div className="illustration-row"><span className="illustration-file green"><FileHeart size={20}/></span><div><b>Prescription</b><small>Care plan · 12 May 2026</small></div><span className="illustration-row-check"><Check size={14}/></span></div><div className="illustration-row"><span className="illustration-file pale"><HeartPulse size={20}/></span><div><b>Vaccination record</b><small>Immunization · 4 Feb 2025</small></div><span className="illustration-row-check"><Check size={14}/></span></div></div><div className="visual-tag"><Search size={16}/> Find what matters, faster</div><div className="visual-spark"><Sparkles size={17}/></div></div>
-    </section>
-    <section className="value-strip"><div className="wrap value-strip-inner"><span><FolderOpen size={18}/> A home for your documents</span><span><Search size={18}/> Quick search and filters</span><span><ShieldCheck size={18}/> Your choices, clearly shown</span></div></section>
-    <section id="benefits" className="benefits-section wrap"><div className="section-heading"><span className="section-kicker">BUILT FOR REAL LIFE</span><h2>Less digging. More clarity.</h2><p>When your records are organized, the information you need is easier to find and understand.</p></div><div className="benefit-cards"><article className="benefit-card"><span className="benefit-card-icon"><UploadCloud size={25}/></span><h3>Bring it together</h3><p>Add your PDFs and images with a date, document type, and care provider.</p><span className="benefit-card-number">01</span></article><article className="benefit-card"><span className="benefit-card-icon"><Search size={25}/></span><h3>Find it in a moment</h3><p>Search titles and notes, or narrow your library by record type.</p><span className="benefit-card-number">02</span></article><article className="benefit-card"><span className="benefit-card-icon"><FileHeart size={25}/></span><h3>Keep the original close</h3><p>Preview a document and download the original whenever you need it.</p><span className="benefit-card-number">03</span></article></div></section>
-    <section id="how-it-works" className="workflow-section"><div className="wrap workflow-grid"><div className="workflow-copy"><span className="section-kicker">SIMPLE FROM THE START</span><h2>A little order goes a long way.</h2><p>Start with one document. Build a library that makes more sense each time you add to it.</p><Link className="button button-primary" href="/signup">Start your dossier <ArrowRight size={18}/></Link></div><div className="workflow-steps"><div><span>1</span><div><strong>Choose how to continue</strong><p>Continue with Google, Apple, or your phone number.</p></div></div><div><span>2</span><div><strong>Add a medical document</strong><p>Keep the original file alongside the details you care about.</p></div></div><div><span>3</span><div><strong>Find it when you need it</strong><p>Search, review, and download from one calm space.</p></div></div></div></div></section>
-    <section className="landing-final wrap"><div><span className="section-kicker">YOUR STORY, BETTER ORGANIZED</span><h2>Make room for what matters.</h2><p>Take the first step toward a clearer view of your medical records.</p></div><Link className="button button-light" href="/signup">Get started <ArrowRight size={18}/></Link></section>
-    <footer className="footer wrap"><Brand/><p>Your health story, beautifully organized.</p></footer>
-  </main>;
+  return (
+    <main className="landing" id="top">
+      <header className="site-header wrap">
+        <Brand />
+        <nav className="landing-nav" aria-label="Main navigation"><a href="#your-library">Your library</a><a href="#how-it-works">How it works</a></nav>
+        <div className="header-actions"><ThemeToggle compact /><Link className="button button-primary header-cta" href="/signup">Get started <ArrowRight size={16} /></Link></div>
+      </header>
+
+      <section className="home-hero wrap">
+        <div className="home-hero-copy">
+          <p className="eyeline"><span className="little-cross" aria-hidden="true" /> A little care for your records</p>
+          <h1>A home for<br />your <em>health story.</em></h1>
+          <p className="hero-description">The scan from last summer. Your latest prescription. Keep them together, ready for whatever comes next.</p>
+          <Link className="button button-primary hero-cta" href="/signup">Start your dossier <ArrowRight size={18} /></Link>
+          <a className="understated-link" href="#how-it-works">Let’s take a look <ArrowDown size={15} /></a>
+        </div>
+        <figure className="home-hero-art"><DossierIllustration /><figcaption>A place for the things worth keeping.</figcaption></figure>
+      </section>
+
+      <div className="document-strip wrap"><p>Big moments. Routine visits.<br /> <strong>There’s room for all of it.</strong></p><ul aria-label="Supported record categories"><li>Prescriptions</li><li>Lab reports</li><li>Scans &amp; imaging</li><li>Care notes</li></ul></div>
+
+      <section className="home-library wrap" id="your-library">
+        <div className="section-aside"><span className="eyeline">Made for everyday life</span><h2>Less looking.<br /><em>More living.</em></h2><p>Health records have a way of ending up everywhere. This is one place to bring them back together.</p><span className="aside-flower" aria-hidden="true">✳</span></div>
+        <div className="feature-rows">{features.map(({ number, icon: Icon, title, description }) => <article className="feature-row" key={number}><span className="feature-index">{number}</span><div><Icon size={23} strokeWidth={1.5} aria-hidden="true" /><h3>{title}</h3><p>{description}</p></div></article>)}</div>
+      </section>
+
+      <section className="home-how" id="how-it-works"><div className="wrap">
+        <div className="how-heading"><span className="eyeline">One small start</span><h2>You don’t need to<br />organize it all today.</h2><p>Start with the document in front of you.<br /> The rest can follow.</p></div>
+        <ol className="how-steps"><li><span className="step-number">1</span><h3>Make yourself at home</h3><p>Get started with Google, Apple, or your phone number.</p></li><li><span className="step-number">2</span><h3>Bring your first record</h3><p>Add a PDF or photo. Include a date and a few useful details.</p></li><li><span className="step-number">3</span><h3>Come back when you need it</h3><p>Your documents, ready to search, open, and download.</p></li></ol>
+      </div></section>
+
+      <section className="home-invitation wrap"><span className="invitation-mark" aria-hidden="true"><FileText size={30} strokeWidth={1.25} /></span><div><h2>Begin with one record.</h2><p>A little more organized. A little more at ease.</p></div><Link className="button button-primary" href="/signup">Get started <ArrowRight size={17} /></Link></section>
+      <footer className="footer wrap"><Brand /><p>A little order. A little peace of mind.</p><a href="#top">Back to top <ArrowUpIcon /></a></footer>
+    </main>
+  );
 }
+
+function ArrowUpIcon() { return <ArrowDown size={14} style={{ transform: "rotate(180deg)" }} aria-hidden="true" />; }
