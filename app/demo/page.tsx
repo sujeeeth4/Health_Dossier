@@ -1,3 +1,3 @@
-import { DemoApp } from "@/components/demo-app";
+import { redirect } from "next/navigation";
 
-export default function DemoPage() { return <DemoApp />; }
+export default function OldDemoPage() { redirect("/records"); }

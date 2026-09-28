@@ -1,14 +1,14 @@
 import Link from "next/link";
 
 export function Brand({ compact = false }: { compact?: boolean }) {
-  return <Link href="/" className="brand" aria-label="Health Dossier home">
-    <span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="32" cy="9" r="3.2" fill="white"/>
-      <path d="M29 17C22 10 14 12 5 15C12 16 17 22 26 22M35 17C42 10 50 12 59 15C52 16 47 22 38 22" stroke="white" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M7 16C10 25 18 26 26 22M57 16C54 25 46 26 38 22" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-      <path d="M32 14V53M37 23C27 20 27 28 34 30C41 33 38 39 31 39" stroke="white" strokeWidth="2.8" strokeLinecap="round"/>
-      <path d="M10 36V50M22 36V50M10 43H22M43 36V50H48C56 50 56 36 48 36H43Z" stroke="white" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg></span>
-    {!compact && <span className="brand-name">Health <strong>Dossier</strong></span>}
+  return <Link href="/" className={`brand ${compact ? "brand-compact" : ""}`} aria-label="Health Dossier home">
+    {!compact && <span className="brand-word brand-health">Health</span>}
+    <svg className="brand-symbol" viewBox="10 0 92 84" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+      <path d="M54 14C43 5 26 11 13 12c9 8 17 9 26 9-6 3-12 4-18 4 7 6 16 7 25 2-4 4-9 6-14 7 8 5 17 2 23-4M58 14C69 5 86 11 99 12c-9 8-17 9-26 9 6 3 12 4 18 4-7 6-16 7-25 2 4 4 9 6 14 7-8 5-17 2-23-4" fill="currentColor"/>
+      <path d="M56 15v60" stroke="#28AF77" strokeWidth="5.5" strokeLinecap="round"/>
+      <circle cx="56" cy="9" r="7" fill="#28AF77"/>
+      <path d="M55 27c15 0 16 17 2 19-13 2-13 12-1 14 10 2 8 9 1 13" stroke="currentColor" strokeWidth="4.2" strokeLinecap="round"/>
+    </svg>
+    {!compact && <span className="brand-word brand-dossier">Dossier</span>}
   </Link>;
 }

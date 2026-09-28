@@ -1,36 +1,26 @@
-# Health Dossier Version 0.1.1
+# Health Dossier
 
-A responsive local demonstration of a patient-controlled medical record. All people, reports, and organizations in the demo are fictional. Do not upload real patient information.
-
-Use the appearance switch in the site header or demo, or the Appearance control in patient Settings, to change between light and dark modes. The choice is saved in this browser. Printed medical summaries use a light page for readability.
+A device-local medical record library built with Next.js. Add PDF or image documents, describe them, search and filter the library, preview originals, download them, edit details, and remove records.
 
 ## Run locally
 
-Install Node.js 20 or newer and npm. Then run:
+Use Node.js 20 or newer:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The landing page leads into simulated patient, doctor, clinic, and platform-administration roles. No account, backend, cloud storage, or external sharing link is created.
+Open http://localhost:3000 and choose **Get started**. The landing page leads to the sign-up interface with Google, Apple, and phone code paths. These front-end flows continue to the device-local record library. No provider or SMS service is connected yet.
 
-## Demo journey
+## Storage and privacy
 
-Enter as a patient, browse the timeline and report library, upload the built-in fictional sample, and review its metadata. In Sharing & access, grant Dr. Meera Sen view-and-contribute access to a selected report. Switch to the doctor role to view the authorized record and add a fictional note. Switch back to the patient role to see the activity event, revoke access, and print or save the medical summary as a PDF.
-
-Fictional metadata and sharing changes are saved in this browser's local storage. A user-selected document preview stays in browser memory for the current session only; its bytes are not saved or uploaded. Clear the site's storage to reset the demo.
+Files and details are saved in this browser profile with IndexedDB. They are not uploaded to a Health Dossier server. There is no account, encryption, cloud sync, or sharing yet. Anyone with access to this browser profile can access the library. Clearing site data removes records, so keep independent backups of important documents. Accepted files are PDF, JPG, PNG, and WebP up to 25 MB each.
 
 ## Checks
 
 ```bash
+npm run lint
 npm run build
-npm test
 npm run test:e2e
 ```
-
-The browser test uses an installed Google Chrome. The medical summary uses the browser print dialog; choose “Save as PDF” to download it.
-
-## Scope
-
-Medical reports and sharing are the complete demo flow. Appointments, medicines, alerts, and administration appear as previews. Authentication, report extraction, professional verification, and sharing methods are simulated. This release is not for clinical use.

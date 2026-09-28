@@ -1,13 +1,12 @@
 {
-  "name": "health-dossier-demo",
-  "version": "0.1.1",
+  "name": "health-dossier",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "vitest run",
     "test:e2e": "playwright test"
   },
   "dependencies": {
