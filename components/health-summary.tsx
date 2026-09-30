@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Activity, ArrowLeft, CalendarDays, FileText, HeartPulse, Pencil, Phone, Pill, Plus, Save, ShieldAlert, Trash2, UserRound, X } from "lucide-react";
 import { Brand } from "@/components/brand";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { DossierNav } from "@/components/dossier-nav";
 import { getBirthDate, getHealthSummary, saveBirthDate, saveHealthSummary, type HealthSummary, type Medication } from "@/lib/records";
 
 type SummaryDraft = Omit<HealthSummary, "allergies" | "conditions" | "updatedAt"> & {
@@ -120,8 +120,8 @@ export function HealthSummaryPage() {
   return <main className="summary-page">
     <header className="site-header wrap">
       <Brand />
-      <nav className="dossier-nav" aria-label="Dossier navigation"><Link className="active" href="/summary">Summary</Link><Link href="/records">Records</Link></nav>
-      <div className="header-actions"><ThemeToggle compact/><Link className="header-back" href="/"><ArrowLeft size={16}/> Home</Link></div>
+      <DossierNav active="summary" />
+      <div className="header-actions"><Link className="header-back" href="/"><ArrowLeft size={16}/> Home</Link></div>
     </header>
 
     <div className="summary-shell wrap">

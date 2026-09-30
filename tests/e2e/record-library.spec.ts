@@ -62,10 +62,11 @@ test("timeline keeps year groups, age labels, and important markers after reload
   await expect(page.getByRole("dialog")).toContainText("Recent scan.pdf");
 });
 
-test("brand and theme remain usable across pages", async ({ page }) => {
+test("brand and permanent dark theme remain consistent across pages", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: "Health Dossier home" }).first()).toBeVisible();
-  await page.getByRole("button", { name: "Switch to dark mode" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.getByRole("button", { name: /Switch to .* mode/ })).toHaveCount(0);
   await page.getByRole("link", { name: "Get started" }).first().click();
   await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
   await page.getByRole("button", { name: "Continue with Google" }).click();

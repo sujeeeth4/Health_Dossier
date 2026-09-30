@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Phone } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { DossierIllustration } from "@/components/dossier-illustration";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 type Step = "choose" | "phone" | "verify";
 
@@ -38,7 +37,7 @@ export function SignupFlow() {
   }
   function goBack() { setError(""); setStep(step === "verify" ? "phone" : "choose"); }
 
-  return <main className="signup-page"><header className="site-header wrap"><Brand/><div className="header-actions"><ThemeToggle compact/><Link href="/" className="header-back"><ArrowLeft size={16}/> Home</Link></div></header><div className="signup-layout wrap">
+  return <main className="signup-page"><header className="site-header wrap"><Brand/><div className="header-actions"><Link href="/" className="header-back"><ArrowLeft size={16}/> Home</Link></div></header><div className="signup-layout wrap">
     <aside className="signup-story"><span className="eyeline">Make yourself at home</span><h1>A little more order.<br/><em>A little more ease.</em></h1><p>Your health records deserve a place of their own.</p><DossierIllustration className="signup-illustration"/><p className="signup-story-foot">Start with one record. The rest can follow.</p></aside>
     <section className="signup-main" aria-labelledby="signup-title"><div className="signup-card">{step !== "choose" && <button type="button" className="signup-back" onClick={goBack}><ArrowLeft size={16}/> Back</button>}
       {step === "choose" && <><span className="signup-step-label">WELCOME</span><h2 id="signup-title">Create your account</h2><p className="signup-intro">Let’s bring your records together.</p><div className="signup-options"><button type="button" className="provider-button" onClick={() => router.push("/records")}><GoogleMark/> Continue with Google</button><button type="button" className="provider-button" onClick={() => router.push("/records")}><AppleMark/> Continue with Apple</button></div><div className="signup-divider"><span>or</span></div><button type="button" className="provider-button phone-button" onClick={() => setStep("phone")}><Phone size={19}/> Continue with phone number</button></>}

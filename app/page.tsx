@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ArrowDown, ArrowRight, FileText, Search, Download } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { DossierIllustration } from "@/components/dossier-illustration";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 const features = [
   { number: "01", icon: FileText, title: "The papers you keep meaning to sort.", description: "Prescriptions, lab results, scans, and care notes. Give each one a name and a date, and keep them together." },
@@ -16,7 +15,7 @@ export default function Home() {
       <header className="site-header wrap">
         <Brand />
         <nav className="landing-nav" aria-label="Main navigation"><a href="#your-library">Your library</a><a href="#how-it-works">How it works</a></nav>
-        <div className="header-actions"><ThemeToggle compact /><Link className="button button-primary header-cta" href="/signup">Get started <ArrowRight size={16} /></Link></div>
+        <div className="header-actions"><Link className="button button-primary header-cta" href="/signup">Get started <ArrowRight size={16} /></Link></div>
       </header>
 
       <section className="home-hero wrap">
@@ -33,7 +32,7 @@ export default function Home() {
       <div className="document-strip wrap"><p>Big moments. Routine visits.<br /> <strong>There’s room for all of it.</strong></p><ul aria-label="Supported record categories"><li>Prescriptions</li><li>Lab reports</li><li>Scans &amp; imaging</li><li>Care notes</li></ul></div>
 
       <section className="home-library wrap" id="your-library">
-        <div className="section-aside"><span className="eyeline">Made for everyday life</span><h2>Less looking.<br /><em>More living.</em></h2><p>Health records have a way of ending up everywhere. This is one place to bring them back together.</p><span className="aside-flower" aria-hidden="true">✳</span></div>
+        <div className="section-aside"><span className="eyeline">Made for everyday life</span><h2>Less looking.<br /><em>More living.</em></h2><p>Health records have a way of ending up everywhere. This is one place to bring them back together.</p></div>
         <div className="feature-rows">{features.map(({ number, icon: Icon, title, description }) => <article className="feature-row" key={number}><span className="feature-index">{number}</span><div><Icon size={23} strokeWidth={1.5} aria-hidden="true" /><h3>{title}</h3><p>{description}</p></div></article>)}</div>
       </section>
 

@@ -20,7 +20,8 @@
 - Edit record details or remove a record when you no longer need it.
 - Keep a health summary with medications, allergies, conditions, blood type, emergency contact, and care notes.
 - Browse records as a searchable library or a year-by-year health timeline.
-- Use the site in light or dark mode on desktop and mobile.
+- Group related records into care collections with private notes and their own timelines.
+- Use the dark theme on desktop and mobile.
 
 ## Run locally
 
