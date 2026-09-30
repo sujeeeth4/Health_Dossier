@@ -18,6 +18,8 @@
 - Save a title, date, record type, provider, and notes alongside the original file.
 - Search and filter your library, then preview or download a document.
 - Edit record details or remove a record when you no longer need it.
+- Keep a health summary with medications, allergies, conditions, blood type, emergency contact, and care notes.
+- Browse records as a searchable library or a year-by-year health timeline.
 - Use the site in light or dark mode on desktop and mobile.
 
 ## Run locally

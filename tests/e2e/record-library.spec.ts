@@ -33,6 +33,35 @@ test("add a record, find it after reload, edit details, download, and remove it"
   await expect(page.getByText("Your library starts here")).toBeVisible();
 });
 
+test("timeline keeps year groups, age labels, and important markers after reload", async ({ page }) => {
+  await page.goto("/records");
+  for (const [title, date, important] of [
+    ["First checkup", "2021-05-20", false],
+    ["Recent scan", "2024-08-15", true],
+  ] as const) {
+    await page.getByRole("button", { name: "Add a record" }).click();
+    await page.getByLabel("Choose medical document").setInputFiles({ name: `${title}.pdf`, mimeType: "application/pdf", buffer: samplePdf });
+    await page.getByPlaceholder("e.g. Annual blood test").fill(title);
+    await page.getByRole("dialog").locator('input[type="date"]').fill(date);
+    if (important) await page.getByRole("checkbox", { name: /Mark as important/ }).check();
+    await page.getByRole("button", { name: "Save record" }).click();
+  }
+  await page.getByRole("button", { name: "Timeline" }).click();
+  await page.getByLabel("Date of birth").fill("2000-07-01");
+  await page.getByLabel("Date of birth").blur();
+  await expect(page.getByRole("region", { name: "Records from 2024" })).toContainText("Age 24");
+  await expect(page.getByRole("region", { name: "Records from 2021" })).toContainText("Age 20");
+  await expect(page.getByRole("region", { name: "Records from 2024" })).toContainText("Important");
+  await page.reload();
+  await page.getByRole("button", { name: "Timeline" }).click();
+  await expect(page.getByLabel("Date of birth")).toHaveValue("2000-07-01");
+  await page.getByPlaceholder("Search records").fill("Recent");
+  await expect(page.getByRole("region", { name: "Records from 2024" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Records from 2021" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Recent scan", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("Recent scan.pdf");
+});
+
 test("brand and theme remain usable across pages", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: "Health Dossier home" }).first()).toBeVisible();
