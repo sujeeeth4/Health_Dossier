@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Activity, ArrowLeft, CalendarDays, FileText, HeartPulse, Pencil, Phone, Pill, Plus, Save, ShieldAlert, Trash2, UserRound, X } from "lucide-react";
+import { Activity, ArrowLeft, CalendarDays, FileText, HeartPulse, Pencil, Phone, Pill, Plus, Printer, Save, ShieldAlert, Trash2, UserRound, X } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { DossierNav } from "@/components/dossier-nav";
 import { getBirthDate, getHealthSummary, saveBirthDate, saveHealthSummary, type HealthSummary, type Medication } from "@/lib/records";
@@ -127,7 +127,7 @@ export function HealthSummaryPage() {
     <div className="summary-shell wrap">
       <div className="summary-heading">
         <div><span className="section-kicker">MY HEALTH DOSSIER</span><h1>Health summary</h1><p>The details you want close at hand.</p></div>
-        {hasSummary && !editing && <button className="button button-primary" onClick={beginEdit}><Pencil size={17}/> Edit summary</button>}
+        {hasSummary && !editing && <div className="summary-heading-actions"><Link className="button button-outline" href="/visit-pack"><Printer size={17}/> Prepare visit pack</Link><button className="button button-primary" onClick={beginEdit}><Pencil size={17}/> Edit summary</button></div>}
       </div>
 
       {message && <p className={message.includes("saved") ? "save-message" : "notice-error"} role="status">{message}</p>}

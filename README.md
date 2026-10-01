@@ -12,6 +12,18 @@
   <img src="docs/images/landing-full.png" alt="Full-page screenshot of the Health Dossier landing page" width="100%" />
 </details>
 
+## Prepare for an appointment
+
+Build a private, clinician-friendly visit pack from the health summary and selected records. Every section can be reviewed before printing, and care notes stay excluded unless they are deliberately added.
+
+![Health Dossier visit pack builder with a printable patient overview](docs/images/visit-pack-screen.png)
+
+## Control doctor access
+
+Grant a verified demo doctor access to selected records, choose what they can do, set an expiry, and revoke access immediately. Sensitive records stay excluded until they are deliberately reviewed and selected.
+
+![Health Dossier sharing dashboard with active access and activity history](docs/images/sharing-screen.png)
+
 ## What you can do
 
 - Add PDF, JPG, PNG, or WebP records up to 25 MB each.
@@ -21,6 +33,10 @@
 - Keep a health summary with medications, allergies, conditions, blood type, emergency contact, and care notes.
 - Browse records as a searchable library or a year-by-year health timeline.
 - Group related records into care collections with private notes and their own timelines.
+- Prepare a visit pack with selected records, medications, allergies, conditions, and emergency details.
+- Print the pack or save it as a PDF without uploading health information.
+- Grant simulated, time-limited doctor access with explicit permissions and immediate revocation.
+- Mark sensitive records, review sharing activity, and keep those controls stored locally.
 - Use the dark theme on desktop and mobile.
 
 ## Run locally

@@ -8,6 +8,7 @@ export type MedicalRecord = {
   provider: string;
   notes: string;
   important?: boolean;
+  sensitive?: boolean;
   collectionIds?: string[];
   fileName: string;
   fileType: string;
@@ -47,18 +48,48 @@ export type HealthSummary = {
   updatedAt: string;
 };
 
+export type SharePermission = "view" | "contribute";
+export type RecordShare = {
+  id: string;
+  recipientId: string;
+  recipientName: string;
+  recipientDetails: string;
+  recordIds: string[];
+  scopeLabel: string;
+  permission: SharePermission;
+  expiryLabel: string;
+  expiresAt: string | null;
+  accessCode: string;
+  status: "active" | "revoked";
+  createdAt: string;
+  revokedAt?: string;
+};
+
+export type ShareEvent = {
+  id: string;
+  shareId: string;
+  action: "granted" | "viewed" | "downloaded" | "revoked";
+  actor: string;
+  detail: string;
+  createdAt: string;
+};
+
 const databaseName = "health-dossier-records";
 const storeName = "records";
 const settingsStore = "settings";
 const collectionsStore = "collections";
+const sharesStore = "shares";
+const shareEventsStore = "share-events";
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(databaseName, 3);
+    const request = indexedDB.open(databaseName, 4);
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains(storeName)) request.result.createObjectStore(storeName, { keyPath: "id" });
       if (!request.result.objectStoreNames.contains(settingsStore)) request.result.createObjectStore(settingsStore);
       if (!request.result.objectStoreNames.contains(collectionsStore)) request.result.createObjectStore(collectionsStore, { keyPath: "id" });
+      if (!request.result.objectStoreNames.contains(sharesStore)) request.result.createObjectStore(sharesStore, { keyPath: "id" });
+      if (!request.result.objectStoreNames.contains(shareEventsStore)) request.result.createObjectStore(shareEventsStore, { keyPath: "id" });
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error ?? new Error("Could not open record storage."));
@@ -116,5 +147,22 @@ export const saveBirthDate = (date: string) => date
   : runRequest<undefined>(settingsStore, "readwrite", store => store.delete("birthDate"));
 export const getHealthSummary = () => runRequest<HealthSummary | undefined>(settingsStore, "readonly", store => store.get("healthSummary"));
 export const saveHealthSummary = (summary: HealthSummary) => runRequest<IDBValidKey>(settingsStore, "readwrite", store => store.put(summary, "healthSummary"));
+export const listShares = () => runRequest<RecordShare[]>(sharesStore, "readonly", store => store.getAll());
+export const listShareEvents = () => runRequest<ShareEvent[]>(shareEventsStore, "readonly", store => store.getAll());
+export async function saveShareWithEvent(share: RecordShare, event: ShareEvent) {
+  const database = await openDatabase();
+  return new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction([sharesStore, shareEventsStore], "readwrite");
+    transaction.objectStore(sharesStore).put(share);
+    transaction.objectStore(shareEventsStore).put(event);
+    transaction.oncomplete = () => { database.close(); resolve(); };
+    transaction.onabort = () => { database.close(); reject(transaction.error ?? new Error("Sharing could not be saved.")); };
+    transaction.onerror = () => { database.close(); reject(transaction.error ?? new Error("Sharing could not be saved.")); };
+  });
+}
+export const saveShareEvent = (event: ShareEvent) => runRequest<IDBValidKey>(shareEventsStore, "readwrite", store => store.put(event));
+export async function revokeShare(share: RecordShare, event: ShareEvent) {
+  return saveShareWithEvent({ ...share, status: "revoked", revokedAt: event.createdAt }, event);
+}
 export function formatBytes(bytes: number) { return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`; }
 export function formatDate(value: string) { return new Date(`${value}T12:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }

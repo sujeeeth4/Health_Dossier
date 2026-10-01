@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowDownToLine, ArrowLeft, CalendarDays, ExternalLink, FileText, FolderHeart, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { ArrowDownToLine, ArrowLeft, CalendarDays, ExternalLink, FileText, FolderHeart, Pencil, Plus, Printer, Search, Share2, Trash2, X } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { DossierNav } from "@/components/dossier-nav";
 import { deleteCareCollection, formatDate, getCollection, listRecords, saveCollection, saveRecords, type CareCollection, type MedicalRecord } from "@/lib/records";
@@ -100,7 +100,7 @@ export function CareCollectionDetail() {
     <div className="collection-detail-shell wrap">
       {loading ? <div className="collection-empty"><p>Opening this collection…</p></div> : !collection ? <section className="collection-empty"><span className="collection-empty-icon"><FolderHeart size={34}/></span><h1>Collection not found</h1><p>It may have been deleted from this browser.</p><Link className="button button-primary" href="/collections">Back to collections</Link></section> : <>
         <Link className="collection-back" href="/collections"><ArrowLeft size={15}/> All collections</Link>
-        <div className="collection-detail-heading"><div><span className="section-kicker">CARE COLLECTION</span><h1>{collection.name}</h1><p>{collection.description || "A care journey made from the records that belong together."}</p></div><div className="collection-heading-actions"><button className="button button-outline" onClick={beginEdit}><Pencil size={16}/> Edit</button><button className="button button-primary" onClick={beginManage}><Plus size={17}/> Manage records</button></div></div>
+        <div className="collection-detail-heading"><div><span className="section-kicker">CARE COLLECTION</span><h1>{collection.name}</h1><p>{collection.description || "A care journey made from the records that belong together."}</p></div><div className="collection-heading-actions"><Link className="button button-outline" href={`/sharing?collection=${collection.id}`}><Share2 size={16}/> Share</Link><Link className="button button-outline" href={`/visit-pack?collection=${collection.id}`}><Printer size={16}/> Prepare pack</Link><button className="button button-outline" onClick={beginEdit}><Pencil size={16}/> Edit</button><button className="button button-primary" onClick={beginManage}><Plus size={17}/> Manage records</button></div></div>
         {message && !editing && !managing && <p className="notice-error" role="alert">{message}</p>}
         <div className="collection-detail-grid">
           <aside className="collection-notes"><div className="collection-panel-title"><FileText size={19}/><h2>Private notes</h2></div><p className={collection.notes ? "" : "muted-note"}>{collection.notes || "Add questions, context, or details you want to remember about this care journey."}</p><button className="small-add" onClick={beginEdit}><Pencil size={14}/>{collection.notes ? "Edit notes" : "Add notes"}</button></aside>

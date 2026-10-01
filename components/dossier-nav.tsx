@@ -1,11 +1,13 @@
 import Link from "next/link";
 
-type DossierSection = "summary" | "records" | "collections";
+type DossierSection = "summary" | "records" | "collections" | "visit-pack" | "sharing";
 
 export function DossierNav({ active }: { active: DossierSection }) {
   return <nav className="dossier-nav" aria-label="Dossier navigation">
     <Link className={active === "summary" ? "active" : ""} href="/summary">Summary</Link>
     <Link className={active === "records" ? "active" : ""} href="/records">Records</Link>
     <Link className={active === "collections" ? "active" : ""} href="/collections">Collections</Link>
+    <Link className={active === "visit-pack" ? "active" : ""} href="/visit-pack">Visit pack</Link>
+    <Link className={active === "sharing" ? "active" : ""} href="/sharing">Sharing</Link>
   </nav>;
 }
