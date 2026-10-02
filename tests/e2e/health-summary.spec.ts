@@ -1,8 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-test("create, view, and edit a health summary stored in the browser", async ({ page }) => {
+test("create, view, and edit a health summary stored in the browser", async ({
+  page,
+}) => {
   await page.goto("/summary");
-  await expect(page.getByRole("heading", { name: "Health summary" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Health summary" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Create my health summary" }).click();
 
   await page.getByLabel("Full name").fill("Asha Rao");
@@ -11,7 +15,9 @@ test("create, view, and edit a health summary stored in the browser", async ({ p
   await page.getByLabel("Allergies").fill("Penicillin\nPeanuts");
   await page.getByLabel("Ongoing conditions").fill("Asthma");
   await page.getByRole("button", { name: "Add your first medication" }).click();
-  await page.getByRole("textbox", { name: "Medication", exact: true }).fill("Montelukast");
+  await page
+    .getByRole("textbox", { name: "Medication", exact: true })
+    .fill("Montelukast");
   await page.getByLabel("Dose").fill("10 mg");
   await page.getByLabel("Schedule").fill("Every evening");
   await page.getByLabel("Name", { exact: true }).fill("Dev Rao");

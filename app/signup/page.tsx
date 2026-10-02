@@ -6,4 +6,6 @@ export const metadata: Metadata = {
   description: "Get started with Health Dossier.",
 };
 
-export default function SignupPage() { return <SignupFlow/>; }
+export default function SignupPage() {
+  return <SignupFlow />;
+}

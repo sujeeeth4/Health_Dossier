@@ -5,12 +5,27 @@ import { cn } from "@/lib/utils";
 
 const buttonVariants = cva("button", {
   variants: {
-    variant: { primary: "button-primary", outline: "button-outline", quiet: "button-text" },
+    variant: {
+      primary: "button-primary",
+      outline: "button-outline",
+      quiet: "button-text",
+    },
   },
   defaultVariants: { variant: "primary" },
 });
 
-export function Button({ asChild = false, variant, className, ...props }: React.ComponentProps<"button"> & VariantProps<typeof buttonVariants> & { asChild?: boolean }) {
+export function Button({
+  asChild = false,
+  variant,
+  className,
+  ...props
+}: React.ComponentProps<"button"> &
+  VariantProps<typeof buttonVariants> & { asChild?: boolean }) {
   const Component = asChild ? Slot : "button";
-  return <Component className={cn(buttonVariants({ variant }), className)} {...props} />;
+  return (
+    <Component
+      className={cn(buttonVariants({ variant }), className)}
+      {...props}
+    />
+  );
 }

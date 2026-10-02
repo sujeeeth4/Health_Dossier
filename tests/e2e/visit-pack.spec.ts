@@ -1,17 +1,32 @@
 import { expect, test } from "@playwright/test";
 
-const samplePdf = Buffer.from("%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF\n");
+const samplePdf = Buffer.from(
+  "%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF\n",
+);
 
-async function addRecord(page: import("@playwright/test").Page, title: string, date: string) {
+async function addRecord(
+  page: import("@playwright/test").Page,
+  title: string,
+  date: string,
+) {
   await page.goto("/records");
   await page.getByRole("button", { name: "Add a record", exact: true }).click();
-  await page.getByLabel("Choose medical document").setInputFiles({ name: `${title}.pdf`, mimeType: "application/pdf", buffer: samplePdf });
+  await page.getByLabel("Choose medical document").setInputFiles({
+    name: `${title}.pdf`,
+    mimeType: "application/pdf",
+    buffer: samplePdf,
+  });
   await page.getByPlaceholder("e.g. Annual blood test").fill(title);
   await page.getByRole("dialog").locator('input[type="date"]').fill(date);
+  await page
+    .getByRole("checkbox", { name: /I compared these details/ })
+    .check();
   await page.getByRole("button", { name: "Save record" }).click();
 }
 
-test("builds a private visit pack from summary sections and selected records", async ({ page }) => {
+test("builds a private visit pack from summary sections and selected records", async ({
+  page,
+}) => {
   await page.goto("/summary");
   await page.getByRole("button", { name: "Create my health summary" }).click();
   await page.getByLabel("Full name").fill("Asha Rao");
@@ -26,20 +41,36 @@ test("builds a private visit pack from summary sections and selected records", a
   await addRecord(page, "Chest scan", "2024-11-02");
   await page.getByRole("link", { name: "Visit pack", exact: true }).click();
 
-  await expect(page.getByRole("heading", { name: "Prepare a visit pack" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Prepare a visit pack" }),
+  ).toBeVisible();
   await expect(page.getByLabel("Visit pack preview")).toContainText("Asha Rao");
-  await expect(page.getByLabel("Visit pack preview")).toContainText("Annual blood test");
-  await expect(page.getByLabel("Visit pack preview")).toContainText("Chest scan");
-  await expect(page.getByLabel("Visit pack preview")).not.toContainText("Prefers morning appointments.");
+  await expect(page.getByLabel("Visit pack preview")).toContainText(
+    "Annual blood test",
+  );
+  await expect(page.getByLabel("Visit pack preview")).toContainText(
+    "Chest scan",
+  );
+  await expect(page.getByLabel("Visit pack preview")).not.toContainText(
+    "Prefers morning appointments.",
+  );
 
   await page.getByLabel("Reason for visit").fill("Respiratory follow-up");
   await page.getByLabel("Doctor or clinic").fill("Dr Mehta");
   await page.getByRole("checkbox", { name: /Care notes/ }).check();
   await page.getByRole("checkbox", { name: /Chest scan/ }).uncheck();
 
-  await expect(page.getByLabel("Visit pack preview")).toContainText("Respiratory follow-up");
+  await expect(page.getByLabel("Visit pack preview")).toContainText(
+    "Respiratory follow-up",
+  );
   await expect(page.getByLabel("Visit pack preview")).toContainText("Dr Mehta");
-  await expect(page.getByLabel("Visit pack preview")).toContainText("Prefers morning appointments.");
-  await expect(page.getByLabel("Visit pack preview")).not.toContainText("Chest scan");
-  await expect(page.getByRole("button", { name: "Print / save as PDF" })).toBeEnabled();
+  await expect(page.getByLabel("Visit pack preview")).toContainText(
+    "Prefers morning appointments.",
+  );
+  await expect(page.getByLabel("Visit pack preview")).not.toContainText(
+    "Chest scan",
+  );
+  await expect(
+    page.getByRole("button", { name: "Print / save as PDF" }),
+  ).toBeEnabled();
 });

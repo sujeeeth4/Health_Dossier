@@ -1,3 +1,5 @@
 import { RecordLibrary } from "@/components/record-library";
 
-export default function RecordsPage() { return <RecordLibrary/>; }
+export default function RecordsPage() {
+  return <RecordLibrary />;
+}
