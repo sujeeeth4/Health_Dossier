@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test";
 
+test.beforeEach(async ({ request }) => {
+  await request.post("/api/test/reset");
+});
+
 test("create, view, and edit a health summary stored in the browser", async ({
   page,
 }) => {

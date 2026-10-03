@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test";
 
+test.beforeEach(async ({ request }) => {
+  await request.post("/api/test/reset");
+});
+
 const samplePdf = Buffer.from(
   "%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF\n",
 );
@@ -122,6 +126,157 @@ test("doctor signup validates passwords and duplicate professional identity", as
   await expect(
     page.getByText("This medical registration is already in use."),
   ).toBeVisible();
+});
+
+test("doctor submits a consultation note and the patient accepts it into the dossier", async ({
+  page,
+}) => {
+  await addRecord(page);
+  await page.goto("/sharing");
+  await page.getByRole("button", { name: "Share records" }).click();
+  await page.getByText("View and contribute", { exact: true }).click();
+  await page.getByRole("button", { name: "Grant access" }).click();
+
+  await page.goto("/doctor/login");
+  await page
+    .getByRole("button", { name: /Use the verified demo account/ })
+    .click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Add consultation note" })
+    .click();
+  await page.getByLabel("Note title").fill("Thyroid follow-up consultation");
+  await page.getByLabel("Linked shared record (optional)").selectOption({
+    label: "Thyroid panel",
+  });
+  await page
+    .getByLabel("Assessment")
+    .fill("Thyroid markers are stable and symptoms are improving.");
+  await page
+    .getByLabel("Recommendations")
+    .fill("Continue the current care plan and monitor symptoms.");
+  await page.getByLabel("Suggested tests (optional)").fill("Repeat TSH");
+  await page.getByRole("button", { name: "Submit for review" }).click();
+  await expect(
+    page.getByText("Consultation note sent for patient review."),
+  ).toBeVisible();
+  await expect(page.getByText("Awaiting review")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Add consultation note" })
+    .click();
+  await page.getByLabel("Note title").fill("Unapproved treatment note");
+  await page.getByLabel("Assessment").fill("A second clinical assessment.");
+  await page
+    .getByLabel("Recommendations")
+    .fill("A recommendation the patient may reject.");
+  await page.getByRole("button", { name: "Submit for review" }).click();
+
+  await page.goto("/sharing");
+  await expect(
+    page.getByText("Thyroid follow-up consultation", { exact: true }),
+  ).toBeVisible();
+  await page.evaluate(() => {
+    window.confirm = () => true;
+  });
+  await page.getByRole("button", { name: "Revoke access" }).click();
+  await expect(
+    page.getByText("Access revoked for Dr Ananya Mehta."),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Thyroid follow-up consultation", { exact: true }),
+  ).toBeVisible();
+  const acceptedCard = page
+    .locator(".patient-contribution-list article")
+    .filter({ hasText: "Thyroid follow-up consultation" });
+  await acceptedCard.getByRole("button", { name: "Review note" }).click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "Thyroid markers are stable",
+  );
+  await page.getByRole("button", { name: "Accept into dossier" }).click();
+  await expect(
+    page.getByText("Doctor note accepted into your dossier."),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Consultation note accepted: Thyroid follow-up consultation"),
+  ).toBeVisible();
+  const rejectedCard = page
+    .locator(".patient-contribution-list article")
+    .filter({ hasText: "Unapproved treatment note" });
+  await rejectedCard.getByRole("button", { name: "Review note" }).click();
+  await page.getByRole("button", { name: "Reject" }).click();
+  await expect(
+    page.getByText("Doctor note rejected and kept out of your clinical views."),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Consultation note rejected: Unapproved treatment note"),
+  ).toBeVisible();
+
+  await page.goto("/records");
+  await page.getByRole("button", { name: "Timeline" }).click();
+  await expect(page.getByText("Unapproved treatment note")).toHaveCount(0);
+  await page
+    .getByRole("button", {
+      name: "Thyroid follow-up consultation",
+      exact: true,
+    })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText(/Accepted doctor note/i);
+  await page
+    .getByRole("dialog")
+    .getByText("Close", { exact: true })
+    .click();
+
+  await page.goto("/visit-pack");
+  await expect(
+    page.getByRole("heading", { name: "Accepted doctor notes (1)" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Thyroid follow-up consultation", { exact: true }),
+  ).toBeVisible();
+
+  await page.goto("/doctor");
+  await expect(page.getByText("No active patient access")).toBeVisible();
+  await expect(page.getByText("Accepted", { exact: true })).toBeVisible();
+  await expect(page.getByText("Rejected", { exact: true })).toBeVisible();
+  await expect(page.getByText("Thyroid panel", { exact: true })).toHaveCount(0);
+});
+
+test("view-only access cannot submit doctor contributions", async ({ page }) => {
+  await addRecord(page);
+  await page.goto("/sharing");
+  await page.getByRole("button", { name: "Share records" }).click();
+  await page.getByRole("button", { name: "Grant access" }).click();
+
+  await page.goto("/doctor/login");
+  await page
+    .getByRole("button", { name: /Use the verified demo account/ })
+    .click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Welcome, Dr Ananya Mehta" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Add consultation note" }),
+  ).toHaveCount(0);
+  const response = await page.evaluate(async () => {
+    const shares = (await (
+      await fetch("/api/data?action=shares")
+    ).json()) as Array<{ id: string }>;
+    const request = await fetch("/api/contributions?scope=doctor", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        shareId: shares[0].id,
+        title: "Should fail",
+        consultationDate: new Date().toISOString().slice(0, 10),
+        assessment: "Not permitted",
+        recommendations: "Not permitted",
+        suggestedTests: "",
+      }),
+    });
+    return request.status;
+  });
+  expect(response).toBe(403);
 });
 
 test.describe("mobile doctor portal", () => {

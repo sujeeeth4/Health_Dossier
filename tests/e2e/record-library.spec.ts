@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test";
 
+test.beforeEach(async ({ request }) => {
+  await request.post("/api/test/reset");
+});
+
 const samplePdf = Buffer.from(
   "%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF\n",
 );
@@ -132,9 +136,9 @@ test("reviews smart import suggestions before saving them", async ({
     "Annual Blood Panel",
   );
   await expect(page.getByLabel("Record type")).toHaveValue("Laboratory");
-  await expect(page.getByPlaceholder("Where this record came from")).toHaveValue(
-    "Lotus Diagnostics",
-  );
+  await expect(
+    page.getByPlaceholder("Where this record came from"),
+  ).toHaveValue("Lotus Diagnostics");
   await expect(page.getByPlaceholder("e.g. Cardiology")).toHaveValue(
     "Pathology",
   );
@@ -161,6 +165,72 @@ test("reviews smart import suggestions before saving them", async ({
   await expect(details).toContainText("HbA1c");
   await expect(details).toContainText("Corrections made during review");
   await expect(details).toContainText("Title");
+});
+
+test("moves existing IndexedDB records into the local backend", async ({
+  page,
+}) => {
+  await page.goto("/records");
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve, reject) => {
+      const deletion = indexedDB.deleteDatabase("health-dossier-records");
+      deletion.onsuccess = () => resolve();
+      deletion.onerror = () => reject(deletion.error);
+    });
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("health-dossier-records", 5);
+      request.onupgradeneeded = () => {
+        for (const [name, options] of [
+          ["records", { keyPath: "id" }],
+          ["settings", undefined],
+          ["collections", { keyPath: "id" }],
+          ["shares", { keyPath: "id" }],
+          ["share-events", { keyPath: "id" }],
+          ["doctor-profiles", { keyPath: "id" }],
+          ["doctor-credentials", { keyPath: "doctorId" }],
+        ] as const) {
+          request.result.createObjectStore(name, options);
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    await new Promise<void>((resolve, reject) => {
+      const transaction = database.transaction("records", "readwrite");
+      transaction.objectStore("records").put({
+        id: "legacy-record",
+        title: "Legacy blood report",
+        type: "Laboratory",
+        date: "2024-04-12",
+        provider: "Old Clinic",
+        notes: "",
+        collectionIds: [],
+        fileName: "legacy.pdf",
+        fileType: "application/pdf",
+        fileSize: 24,
+        file: new Blob(["%PDF-1.4 legacy"], { type: "application/pdf" }),
+        createdAt: new Date().toISOString(),
+      });
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+    database.close();
+  });
+  await page.reload();
+  await expect(
+    page.getByText("Browser records are ready to move"),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Move data to this Mac" }).click();
+  await expect(
+    page.getByRole("button", { name: "Legacy blood report", exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Legacy blood report", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Browser records are ready to move")).toHaveCount(
+    0,
+  );
 });
 
 test("brand and permanent dark theme remain consistent across pages", async ({

@@ -1,3 +1,5 @@
 import { defineConfig } from "vitest/config";
 
-export default defineConfig({ test: { include: ["lib/**/*.test.ts"] } });
+export default defineConfig({
+  test: { include: ["src/lib/**/*.test.ts", "src/server/**/*.test.ts"] },
+});

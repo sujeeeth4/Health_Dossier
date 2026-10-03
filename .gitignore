@@ -1,3 +1,21 @@
 node_modules/
 .next/
 test-results/
+coverage/
+.DS_Store
+data/*
+!data/README.md
+.playwright-data/
+*.tsbuildinfo
+
+# Private, machine-local health data and configuration
+sensi/
+.env*
+!.env.example
+*.hdbak
+
+# Private keys and signing credentials
+*.pem
+*.key
+*.p12
+*.pfx

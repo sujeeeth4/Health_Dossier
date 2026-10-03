@@ -1,54 +1,62 @@
 # Health Dossier code guide
 
-This guide explains how the local demo is organized and where to make common changes. The application is a Next.js App Router project written in TypeScript. It has no backend: all fictional records and workflow state remain in the current browser profile.
+This guide explains how the local demo is organized and where to make common changes. The application is a Next.js App Router project written in TypeScript, with localhost API routes and JSON/filesystem persistence on the same Mac.
 
 ## Project map
 
 ```text
-app/                  Route entry points and global styles
-components/           Stateful screens and reusable visual components
-components/ui/        Small generic UI primitives
-lib/records.ts        Domain models and the complete IndexedDB data layer
+src/app/              Next.js route entry points and global styles
+src/features/         Complete patient and doctor workflows, grouped by domain
+src/components/       Shared brand, navigation, illustration, and UI primitives
+src/lib/records.ts    Shared domain types and the browser HTTP client
+src/server/           Server-only JSON storage, sessions, and authorization
+data/                 Gitignored JSON database, backup, sessions, and uploads
 tests/e2e/            Playwright tests for complete user journeys
-docs/images/          Screenshots used by the README
+docs/                 Product documents, code guidance, and README screenshots
 ```
 
-Route files in `app/` are intentionally thin. They import a screen component from `components/`, which keeps routing separate from browser state and workflow logic.
+Route files in `src/app/` are intentionally thin. They import screen components from the matching `src/features/` folder, which keeps routing separate from browser state and workflow logic. Code shared by multiple features belongs in `src/components/` or `src/lib/`; feature-specific code should stay with its domain.
 
 ## Main workflows
 
 | Route                                | Component                     | Responsibility                                                                                                    |
 | ------------------------------------ | ----------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `/summary`                           | `HealthSummaryPage`           | Patient details, allergies, conditions, medications, and emergency contact                                        |
-| `/records`                           | `RecordLibrary`               | Local file upload, simulated extraction review, structured metadata, search, timeline, and sensitive-record flags |
+| `/records`                           | `RecordLibrary`               | Local file upload, simulated extraction review, structured metadata, search, and a timeline with accepted doctor notes |
 | `/collections`                       | `CareCollectionsPage`         | Groups records into care journeys                                                                                 |
 | `/collections/[id]`                  | `CareCollectionDetail`        | Collection timeline, notes, and membership                                                                        |
-| `/visit-pack`                        | `VisitPackPage`               | Builds a print-friendly appointment overview                                                                      |
-| `/sharing`                           | `SharingPage`                 | Simulated consent, expiry, revocation, and activity history                                                       |
+| `/visit-pack`                        | `VisitPackPage`               | Builds a print-friendly appointment overview with patient-controlled accepted doctor notes                        |
+| `/sharing`                           | `SharingPage`                 | Simulated consent, expiry, contribution review, revocation, and activity history                                  |
 | `/doctor/login` and `/doctor/signup` | `DoctorLogin`, `DoctorSignup` | Browser-local credentials and simulated professional verification                                                 |
-| `/doctor`                            | `DoctorPortal`                | Active patient grants, shared-record access, and doctor activity events                                           |
+| `/doctor`                            | `DoctorPortal`                | Active grants, shared-record access, structured consultation submission, and doctor activity events              |
+| `/settings`                          | `SettingsPage`                | Encrypted export, archive inspection, merge/replace restore, and snapshot rollback                                |
 
 `DossierNav` is the shared authenticated-area navigation. Add a route there only when it is a top-level patient workflow.
 
 ## Data and privacy boundaries
 
-`lib/records.ts` is the only module that should know IndexedDB store names or database versions. UI components call its typed functions instead of opening IndexedDB directly.
+Feature components call `src/lib/records.ts`; they should not use `fetch` or filesystem paths directly. Server route handlers authorize requests and delegate persistence to `src/server/`.
 
-The database contains these stores:
+The local data directory contains:
 
-- `records`: metadata plus the original local `Blob`.
-- `settings`: keyed values such as birth date and health summary.
-- `collections`: collection names, descriptions, and private notes.
-- `shares`: simulated access grants.
-- `share-events`: the browser-local sharing activity log.
-- `doctor-profiles`: public professional details shown to patients.
-- `doctor-credentials`: salted password hashes kept separate from public profiles.
+- `database.json`: patient settings, metadata, collections, doctor profiles and credential hashes, shares, doctor contributions, and activity.
+- `database.json.bak`: the previous valid database write.
+- `sessions.json`: hashed, expiring session tokens.
+- `uploads/`: original PDFs and images, addressed internally by record ID.
+- `restore-snapshots/`: the three newest private pre-restore database and upload snapshots.
+- `.backup-temp/`: short-lived encrypted, decrypted, and staged restore files.
 
-When changing the schema, increase the database version in `openDatabase` and add a guarded migration inside `onupgradeneeded`. Operations that update related stores should share one transaction so partial state cannot be saved.
+JSON updates pass through Zod validation and the serialized atomic-write queue. Related changes must happen in one `updateDatabase` callback. Never return `filePath` values through an API.
 
 No component should create a public URL, upload a document, or imply that simulated access is production security.
 
-Doctor sessions use `sessionStorage` and therefore persist across refreshes only in the current browser tab. The doctor portal must always derive accessible records from active, unexpired grants for the signed-in doctor; it must never expose the complete record library as a fallback.
+Patient and doctor sessions use separate HTTP-only cookies. The doctor portal and file routes must always derive access from active, unexpired grants for the signed-in doctor; they must never expose the complete record library as a fallback.
+
+Doctor consultation notes use the dedicated `/api/contributions` route. The server derives doctor identity from the authenticated session, validates the grant and linked record, and writes each submission or patient decision together with its audit event. Submitted notes are immutable; only accepted notes are presented in the patient timeline and Visit Pack.
+
+Backup routes under `/api/backups` require the patient session and same-origin requests. `src/server/backup.ts` writes a versioned gzipped tar stream, encrypts it with AES-256-GCM using a PBKDF2-derived key, verifies authenticated ciphertext and SHA-256 file checksums during inspection, and stages every restore before swapping local data. Archives contain credential hashes but never `sessions.json` or raw passwords.
+
+`src/lib/legacy-indexeddb.ts` exists only for the explicit one-time migration. New feature code must not write to IndexedDB.
 
 The record import demo deliberately derives fictional suggestions from the selected file name. It never reads document contents or sends files to an extraction service. `RecordLibrary` requires the user to compare those suggestions with the original before saving and stores the corrected field names with the record.
 
@@ -68,7 +76,7 @@ Keep business rules in named functions. Comments should explain privacy decision
 
 ## Styling
 
-`app/globals.css` is grouped by product area in the same order as the main routes. Shared tokens and primitives appear first; responsive rules and print rules appear last. Reuse the existing CSS variables and shared classes before adding another variant.
+`src/app/globals.css` is grouped by product area in the same order as the main routes. Shared tokens and primitives appear first; responsive rules and print rules appear last. Reuse the existing CSS variables and shared classes before adding another variant.
 
 The Visit Pack deliberately switches to a light paper design and has dedicated `@media print` rules. Changes to that feature should be checked both on screen and as an A4 print preview.
 

@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test";
 
+test.beforeEach(async ({ request }) => {
+  await request.post("/api/test/reset");
+});
+
 const samplePdf = Buffer.from(
   "%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF\n",
 );
