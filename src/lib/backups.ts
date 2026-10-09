@@ -8,6 +8,7 @@ export type BackupCounts = {
   doctors: number;
   shares: number;
   contributions: number;
+  measurements: number;
 };
 export type RecoverySnapshot = {
   id: string;
@@ -34,6 +35,8 @@ export type BackupInspection = {
     conflictingDoctors: number;
     newContributions: number;
     conflictingContributions: number;
+    newMeasurements: number;
+    conflictingMeasurements: number;
   };
 };
 export type RestoreResult = {

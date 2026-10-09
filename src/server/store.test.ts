@@ -61,9 +61,24 @@ describe("local JSON store", () => {
     );
 
     const migrated = await store.readDatabase();
-    expect(migrated.version).toBe(2);
+    expect(migrated.version).toBe(3);
     expect(migrated.contributions).toEqual([]);
+    expect(migrated.measurements).toEqual([]);
     expect(migrated.birthDate).toBe("1991-03-04");
+  });
+
+  it("normalizes version 2 databases and backups with empty measurements", async () => {
+    const current = await store.readDatabase();
+    const versionTwo = { ...current, version: 2 } as Record<string, unknown>;
+    delete versionTwo.measurements;
+    expect(store.migrateLocalDatabase(versionTwo)).toMatchObject({
+      version: 3,
+      measurements: [],
+    });
+    expect(backup.normalizeBackupDatabase(versionTwo)).toMatchObject({
+      version: 3,
+      measurements: [],
+    });
   });
 
   it("encrypts, validates, merges, replaces, and rolls back complete backups", async () => {
@@ -84,6 +99,23 @@ describe("local JSON store", () => {
           fileSize: source.length,
           filePath: relativePath,
           createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ];
+      database.measurements = [
+        {
+          id: "measurement-1",
+          name: "HbA1c",
+          value: 5.6,
+          unit: "%",
+          measuredAt: "2026-01-01",
+          category: "Laboratory",
+          referenceLow: 4,
+          referenceHigh: 5.7,
+          notes: "",
+          sourceRecordId: "record-1",
+          sourceRecordTitle: "Original report",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
         },
       ];
     });
@@ -113,12 +145,14 @@ describe("local JSON store", () => {
       "CorrectHorse123",
     );
     expect(inspection.counts.records).toBe(1);
+    expect(inspection.counts.measurements).toBe(1);
     expect(inspection.totalBytes).toBe(source.length);
 
     const currentOnly = Buffer.from("current only");
     await writeFile(path.join(directory, "uploads", "record-2.pdf"), currentOnly);
     await store.updateDatabase((database) => {
       database.records[0].title = "Current report wins";
+      database.measurements[0].value = 6.1;
       database.records.push({
         ...database.records[0],
         id: "record-2",
@@ -134,10 +168,12 @@ describe("local JSON store", () => {
       "Current report wins",
       "Current-only report",
     ]);
+    expect(restored.measurements[0].value).toBe(6.1);
 
     await backup.restoreEncryptedBackup(encrypted.path, "CorrectHorse123", "replace");
     restored = await store.readDatabase();
     expect(restored.records.map((item) => item.title)).toEqual(["Original report"]);
+    expect(restored.measurements[0].value).toBe(5.6);
     expect(await readFile(path.join(directory, restored.records[0].filePath))).toEqual(source);
 
     const snapshots = (await backup.getBackupStatus()).snapshots;

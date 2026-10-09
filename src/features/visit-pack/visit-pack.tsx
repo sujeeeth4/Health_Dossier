@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   CalendarDays,
+  ChartNoAxesCombined,
   Check,
   ClipboardCheck,
   ClipboardList,
@@ -26,10 +27,14 @@ import {
   getHealthSummary,
   listCollections,
   listContributions,
+  listMeasurements,
   listRecords,
+  measurementGroupKey,
+  measurementRangeStatus,
   type CareCollection,
   type DoctorContribution,
   type HealthSummary,
+  type HealthMeasurement,
   type MedicalRecord,
 } from "@/lib/records";
 
@@ -59,12 +64,14 @@ export function VisitPackPage() {
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [collections, setCollections] = useState<CareCollection[]>([]);
   const [doctorNotes, setDoctorNotes] = useState<DoctorContribution[]>([]);
+  const [measurements, setMeasurements] = useState<HealthMeasurement[]>([]);
   const [summary, setSummary] = useState<HealthSummary | null>(null);
   const [birthDate, setBirthDate] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [source, setSource] = useState("all");
   const [sections, setSections] = useState<IncludedSections>(defaultSections);
   const [includeDoctorNotes, setIncludeDoctorNotes] = useState(true);
+  const [selectedMetricKeys, setSelectedMetricKeys] = useState<string[]>([]);
   const [visitFor, setVisitFor] = useState("");
   const [clinician, setClinician] = useState("");
   const [loading, setLoading] = useState(true);
@@ -75,6 +82,7 @@ export function VisitPackPage() {
       listRecords(),
       listCollections(),
       listContributions(),
+      listMeasurements(),
       getHealthSummary(),
       getBirthDate(),
     ])
@@ -83,6 +91,7 @@ export function VisitPackPage() {
           storedRecords,
           storedCollections,
           storedContributions,
+          storedMeasurements,
           storedSummary,
           storedBirthDate,
         ]) => {
@@ -107,6 +116,7 @@ export function VisitPackPage() {
                 b.consultationDate.localeCompare(a.consultationDate),
               ),
           );
+          setMeasurements(storedMeasurements);
           setSummary(storedSummary ?? null);
           setBirthDate(storedBirthDate ?? "");
           setSource(
@@ -144,6 +154,23 @@ export function VisitPackPage() {
         .filter((record) => selectedIds.includes(record.id))
         .sort((a, b) => b.date.localeCompare(a.date)),
     [records, selectedIds],
+  );
+  const measurementGroups = useMemo(() => {
+    const grouped = new Map<string, HealthMeasurement[]>();
+    for (const measurement of measurements) {
+      const key = measurementGroupKey(measurement.name, measurement.unit);
+      grouped.set(key, [...(grouped.get(key) ?? []), measurement]);
+    }
+    return [...grouped.entries()]
+      .map(([key, items]) => ({
+        key,
+        items: items.sort((a, b) => b.measuredAt.localeCompare(a.measuredAt)),
+      }))
+      .sort((a, b) => a.items[0].name.localeCompare(b.items[0].name));
+  }, [measurements]);
+  const selectedMeasurements = useMemo(
+    () => measurementGroups.filter((group) => selectedMetricKeys.includes(group.key)),
+    [measurementGroups, selectedMetricKeys],
   );
   const generatedDate = new Intl.DateTimeFormat("en-IN", {
     day: "numeric",
@@ -201,7 +228,10 @@ export function VisitPackPage() {
               className="button button-primary"
               onClick={() => window.print()}
               disabled={
-                loading || (!hasSummaryContent && selectedRecords.length === 0)
+                loading ||
+                (!hasSummaryContent &&
+                  selectedRecords.length === 0 &&
+                  selectedMeasurements.length === 0)
               }
             >
               <Printer size={18} /> Print / save as PDF
@@ -347,6 +377,40 @@ export function VisitPackPage() {
                   <div className="pack-missing">
                     <p>No health summary has been created yet.</p>
                     <Link href="/summary">Create a summary</Link>
+                  </div>
+                )}
+              </section>
+
+              <section className="pack-control-section">
+                <div className="pack-control-title">
+                  <ChartNoAxesCombined size={18} />
+                  <div>
+                    <strong>Health trends</strong>
+                    <span>Excluded until you choose individual metrics.</span>
+                  </div>
+                </div>
+                {measurementGroups.length ? (
+                  <div className="pack-check-list">
+                    {measurementGroups.map((group) => (
+                      <PackCheck
+                        key={group.key}
+                        label={`${group.items[0].name} · ${group.items[0].unit}`}
+                        detail={`${group.items.length} ${group.items.length === 1 ? "reading" : "readings"}`}
+                        checked={selectedMetricKeys.includes(group.key)}
+                        onChange={(checked) =>
+                          setSelectedMetricKeys((current) =>
+                            checked
+                              ? [...new Set([...current, group.key])]
+                              : current.filter((key) => key !== group.key),
+                          )
+                        }
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="pack-missing">
+                    <p>No health measurements have been added.</p>
+                    <Link href="/trends">Add measurements</Link>
                   </div>
                 )}
               </section>
@@ -607,6 +671,37 @@ export function VisitPackPage() {
                 </section>
               )}
 
+              {selectedMeasurements.length > 0 && (
+                <section className="pack-document-section pack-trends">
+                  <PackSectionHeading
+                    icon={<ChartNoAxesCombined size={17} />}
+                    title={`Selected health trends (${selectedMeasurements.length})`}
+                  />
+                  <p className="pack-trends-note">
+                    Range labels reflect only limits entered from source reports.
+                  </p>
+                  {selectedMeasurements.map((group) => (
+                    <div className="pack-trend-group" key={group.key}>
+                      <h4>{group.items[0].name} <span>{group.items[0].unit}</span></h4>
+                      <table>
+                        <thead><tr><th>Date</th><th>Value</th><th>Report range</th><th>Status</th><th>Source</th></tr></thead>
+                        <tbody>
+                          {group.items.slice(0, 8).map((measurement) => (
+                            <tr key={measurement.id}>
+                              <td>{formatDate(measurement.measuredAt)}</td>
+                              <td>{measurement.value} {measurement.unit}</td>
+                              <td>{packRange(measurement)}</td>
+                              <td>{packStatus(measurement)}</td>
+                              <td>{measurement.sourceRecordTitle ?? "Manual entry"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
+                </section>
+              )}
+
               <section className="pack-document-section pack-record-index">
                 <PackSectionHeading
                   icon={<CalendarDays size={17} />}
@@ -699,6 +794,25 @@ function PackFact({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+function packRange(measurement: HealthMeasurement) {
+  if (measurement.referenceLow !== undefined && measurement.referenceHigh !== undefined)
+    return `${measurement.referenceLow}–${measurement.referenceHigh} ${measurement.unit}`;
+  if (measurement.referenceLow !== undefined)
+    return `≥ ${measurement.referenceLow} ${measurement.unit}`;
+  if (measurement.referenceHigh !== undefined)
+    return `≤ ${measurement.referenceHigh} ${measurement.unit}`;
+  return "Not supplied";
+}
+
+function packStatus(measurement: HealthMeasurement) {
+  const status = measurementRangeStatus(measurement);
+  if (status === "low") return "Below supplied range";
+  if (status === "high") return "Above supplied range";
+  if (status === "within") return "Within supplied range";
+  return "No range supplied";
+}
+
 function PackListSection({
   icon,
   title,

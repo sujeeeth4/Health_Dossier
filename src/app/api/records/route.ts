@@ -72,6 +72,11 @@ export async function DELETE(request: Request) {
       ...share,
       recordIds: share.recordIds.filter((recordId) => recordId !== id),
     }));
+    database.measurements = database.measurements.map((measurement) =>
+      measurement.sourceRecordId === id
+        ? { ...measurement, sourceRecordId: undefined }
+        : measurement,
+    );
     if (record) await removeUpload(record.filePath);
   });
   return NextResponse.json({ ok: true });

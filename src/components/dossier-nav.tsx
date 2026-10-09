@@ -1,7 +1,13 @@
 import Link from "next/link";
 
 type DossierSection =
-  "summary" | "records" | "collections" | "visit-pack" | "sharing" | "settings";
+  | "summary"
+  | "records"
+  | "trends"
+  | "collections"
+  | "visit-pack"
+  | "sharing"
+  | "settings";
 
 /** Shared top-level navigation for every patient dossier workflow. */
 export function DossierNav({ active }: { active: DossierSection }) {
@@ -12,6 +18,9 @@ export function DossierNav({ active }: { active: DossierSection }) {
       </Link>
       <Link className={active === "records" ? "active" : ""} href="/records">
         Records
+      </Link>
+      <Link className={active === "trends" ? "active" : ""} href="/trends">
+        Trends
       </Link>
       <Link
         className={active === "collections" ? "active" : ""}

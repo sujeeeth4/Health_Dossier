@@ -54,7 +54,7 @@ type BackupFile = {
 };
 type BackupManifest = {
   formatVersion: 1;
-  databaseVersion: 2;
+  databaseVersion: 2 | 3;
   createdAt: string;
   counts: BackupCounts;
   totalBytes: number;
@@ -74,7 +74,7 @@ const deriveKey = promisify(pbkdf2Callback);
 
 const databaseSnapshotSchema = z
   .object({
-    version: z.literal(2),
+    version: z.union([z.literal(2), z.literal(3)]),
     migrationCompleted: z.boolean(),
     patient: z.object({ id: z.literal("local-patient"), createdAt: z.string() }),
     birthDate: z.string(),
@@ -100,12 +100,13 @@ const databaseSnapshotSchema = z
     shares: z.array(z.object({ id: z.string().min(1) }).passthrough()),
     shareEvents: z.array(z.object({ id: z.string().min(1) }).passthrough()),
     contributions: z.array(z.object({ id: z.string().min(1) }).passthrough()),
+    measurements: z.array(z.object({ id: z.string().min(1) }).passthrough()).optional(),
   })
   .passthrough();
 
 const manifestSchema = z.object({
   formatVersion: z.literal(1),
-  databaseVersion: z.literal(2),
+  databaseVersion: z.union([z.literal(2), z.literal(3)]),
   createdAt: z.string().datetime(),
   counts: z.object({
     records: z.number().int().nonnegative(),
@@ -114,6 +115,7 @@ const manifestSchema = z.object({
     doctors: z.number().int().nonnegative(),
     shares: z.number().int().nonnegative(),
     contributions: z.number().int().nonnegative(),
+    measurements: z.number().int().nonnegative().optional().default(0),
   }),
   totalBytes: z.number().int().nonnegative(),
   database: databaseSnapshotSchema,
@@ -126,6 +128,16 @@ const manifestSchema = z.object({
     }),
   ),
 });
+
+/** Upgrades a validated older archive database without changing its container format. */
+export function normalizeBackupDatabase(value: unknown): LocalDatabase {
+  const parsed = databaseSnapshotSchema.parse(value);
+  return {
+    ...parsed,
+    version: 3,
+    measurements: parsed.measurements ?? [],
+  } as LocalDatabase;
+}
 
 function assertPassphrase(passphrase: string) {
   if (passphrase.length < 12 || passphrase.length > 256)
@@ -140,6 +152,7 @@ function countsFor(database: LocalDatabase): BackupCounts {
     doctors: database.doctors.length,
     shares: database.shares.length,
     contributions: database.contributions.length,
+    measurements: database.measurements.length,
   };
 }
 
@@ -214,7 +227,7 @@ async function buildManifest(): Promise<BackupManifest> {
   }
   return {
     formatVersion: 1,
-    databaseVersion: 2,
+    databaseVersion: 3,
     createdAt: new Date().toISOString(),
     counts: countsFor(database),
     totalBytes: files.reduce((sum, file) => sum + file.size, 0),
@@ -361,7 +374,11 @@ async function extractAndValidate(archivePath: string, passphrase: string) {
           throw new Error("The backup manifest is invalid.");
         const value = Buffer.alloc(size);
         await handle.read(value, 0, size, offset);
-        manifest = manifestSchema.parse(JSON.parse(value.toString("utf8"))) as BackupManifest;
+        const parsed = manifestSchema.parse(JSON.parse(value.toString("utf8")));
+        manifest = {
+          ...parsed,
+          database: normalizeBackupDatabase(parsed.database),
+        } as BackupManifest;
       } else {
         if (!/^files\/[A-Za-z0-9._-]+$/.test(name) || extracted.has(name))
           throw new Error("The backup archive contains an unsafe file path.");
@@ -384,7 +401,11 @@ async function extractAndValidate(archivePath: string, passphrase: string) {
   if (manifest.files.length !== manifest.database.records.length)
     throw new Error("The backup does not contain every original file.");
   const recordIds = new Set(manifest.database.records.map((record) => record.id));
-  if (manifest.counts.records !== recordIds.size || manifest.counts.files !== manifest.files.length)
+  if (
+    manifest.counts.records !== recordIds.size ||
+    manifest.counts.files !== manifest.files.length ||
+    manifest.counts.measurements !== manifest.database.measurements.length
+  )
     throw new Error("The backup counts do not match its contents.");
   for (const file of manifest.files) {
     const source = extracted.get(file.archivePath);
@@ -414,6 +435,7 @@ function comparisonFor(backup: LocalDatabase, current: LocalDatabase) {
   const records = compare(backup.records, current.records);
   const doctors = compare(backup.doctors, current.doctors);
   const contributions = compare(backup.contributions, current.contributions);
+  const measurements = compare(backup.measurements, current.measurements);
   return {
     newRecords: records.added,
     conflictingRecords: records.conflicts,
@@ -421,6 +443,8 @@ function comparisonFor(backup: LocalDatabase, current: LocalDatabase) {
     conflictingDoctors: doctors.conflicts,
     newContributions: contributions.added,
     conflictingContributions: contributions.conflicts,
+    newMeasurements: measurements.added,
+    conflictingMeasurements: measurements.conflicts,
   };
 }
 
@@ -449,7 +473,11 @@ async function listSnapshots(): Promise<RecoverySnapshot[]> {
       const value = JSON.parse(
         await readFile(path.join(snapshotsDirectory, entry.name, "metadata.json"), "utf8"),
       ) as RecoverySnapshot;
-      if (value.id === entry.name) snapshots.push(value);
+      if (value.id === entry.name)
+        snapshots.push({
+          ...value,
+          counts: { ...value.counts, measurements: value.counts.measurements ?? 0 },
+        });
     } catch {
       // Ignore incomplete snapshots; restore never selects them.
     }
@@ -536,6 +564,7 @@ export async function restoreEncryptedBackup(
             shares: mergeById(current.shares, incoming.shares),
             shareEvents: mergeById(current.shareEvents, incoming.shareEvents),
             contributions: mergeById(current.contributions, incoming.contributions),
+            measurements: mergeById(current.measurements, incoming.measurements),
           };
     const snapshot = await createRecoverySnapshot(`Before ${mode} restore`);
     await replaceLocalData(restored, preparedUploads);
@@ -551,9 +580,9 @@ export async function rollbackRecoverySnapshot(id: string): Promise<RestoreResul
   const directory = path.join(snapshotsDirectory, id);
   const metadata = JSON.parse(await readFile(path.join(directory, "metadata.json"), "utf8")) as RecoverySnapshot;
   if (metadata.id !== id) throw new Error("Invalid recovery snapshot.");
-  const database = databaseSnapshotSchema.parse(
+  const database = normalizeBackupDatabase(
     JSON.parse(await readFile(path.join(directory, "database.json"), "utf8")),
-  ) as LocalDatabase;
+  );
   const preparedUploads = path.join(tempDirectory, `${randomUUID()}-rollback-uploads`);
   await mkdir(tempDirectory, { recursive: true, mode: 0o700 });
   await cp(path.join(directory, "uploads"), preparedUploads, { recursive: true });

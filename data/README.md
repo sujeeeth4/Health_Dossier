@@ -2,7 +2,7 @@
 
 When the app runs, this directory contains plaintext health data for this Mac:
 
-- `database.json` — profiles, record metadata, collections, shares, and activity.
+- `database.json` — profiles, record metadata, structured measurements, collections, shares, and activity.
 - `database.json.bak` — the previous valid database write.
 - `sessions.json` — hashed local session tokens.
 - `uploads/` — original PDFs and images.

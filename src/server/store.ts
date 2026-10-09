@@ -16,6 +16,7 @@ import type {
   CareCollection,
   DoctorContribution,
   DoctorProfile,
+  HealthMeasurement,
   HealthSummary,
   MedicalRecord,
   RecordShare,
@@ -30,7 +31,7 @@ export type StoredCredential = {
   passwordHash: string;
 };
 export type LocalDatabase = {
-  version: 2;
+  version: 3;
   migrationCompleted: boolean;
   patient: { id: "local-patient"; createdAt: string };
   birthDate: string;
@@ -42,10 +43,11 @@ export type LocalDatabase = {
   shares: RecordShare[];
   shareEvents: ShareEvent[];
   contributions: DoctorContribution[];
+  measurements: HealthMeasurement[];
 };
 
 const databaseSchema = z.object({
-  version: z.union([z.literal(1), z.literal(2)]),
+  version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   migrationCompleted: z.boolean(),
   patient: z.object({ id: z.literal("local-patient"), createdAt: z.string() }),
   birthDate: z.string(),
@@ -57,6 +59,7 @@ const databaseSchema = z.object({
   shares: z.array(z.unknown()),
   shareEvents: z.array(z.unknown()),
   contributions: z.array(z.unknown()).optional(),
+  measurements: z.array(z.unknown()).optional(),
 });
 
 const pbkdf2 = promisify(pbkdf2Callback);
@@ -110,6 +113,17 @@ const builtInDoctors: DoctorProfile[] = [
 let writeQueue: Promise<unknown> = Promise.resolve();
 let schemaMigration: Promise<void> | undefined;
 
+/** Normalizes every supported on-disk schema before the app uses it. */
+export function migrateLocalDatabase(value: unknown): LocalDatabase {
+  const parsed = databaseSchema.parse(value);
+  return {
+    ...parsed,
+    version: 3,
+    contributions: parsed.contributions ?? [],
+    measurements: parsed.measurements ?? [],
+  } as LocalDatabase;
+}
+
 export async function hashPassword(password: string, saltValue?: string) {
   const salt = saltValue ? Buffer.from(saltValue, "base64") : randomBytes(16);
   const hash = await pbkdf2(password, salt, 120_000, 32, "sha256");
@@ -122,7 +136,7 @@ export async function hashPassword(password: string, saltValue?: string) {
 async function freshDatabase(): Promise<LocalDatabase> {
   const hashed = await hashPassword(demoDoctorPassword);
   return {
-    version: 2,
+    version: 3,
     migrationCompleted: false,
     patient: { id: "local-patient", createdAt: new Date().toISOString() },
     birthDate: "",
@@ -137,6 +151,7 @@ async function freshDatabase(): Promise<LocalDatabase> {
     shares: [],
     shareEvents: [],
     contributions: [],
+    measurements: [],
   };
 }
 
@@ -160,20 +175,15 @@ async function ensureStorage() {
 
 export async function readDatabase(): Promise<LocalDatabase> {
   await ensureStorage();
-  const parsed = databaseSchema.parse(
-    JSON.parse(await readFile(databasePath, "utf8")),
-  );
-  if (parsed.version === 1 || !parsed.contributions) {
-    const migrated = {
-      ...parsed,
-      version: 2 as const,
-      contributions: parsed.contributions ?? [],
-    } as LocalDatabase;
+  const source = JSON.parse(await readFile(databasePath, "utf8"));
+  const parsed = databaseSchema.parse(source);
+  if (parsed.version !== 3 || !parsed.contributions || !parsed.measurements) {
+    const migrated = migrateLocalDatabase(parsed);
     schemaMigration ??= writeDatabase(migrated);
     await schemaMigration;
     return migrated;
   }
-  return parsed as LocalDatabase;
+  return migrateLocalDatabase(parsed);
 }
 
 async function writeDatabase(database: LocalDatabase, createBackup = true) {

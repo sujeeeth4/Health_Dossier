@@ -59,6 +59,61 @@ export type HealthSummary = {
   careNotes: string;
   updatedAt: string;
 };
+export const measurementCategories = [
+  "Laboratory",
+  "Vital sign",
+  "Body measurement",
+  "Other",
+] as const;
+export type MeasurementCategory = (typeof measurementCategories)[number];
+export type HealthMeasurement = {
+  id: string;
+  name: string;
+  value: number;
+  unit: string;
+  measuredAt: string;
+  category: MeasurementCategory;
+  referenceLow?: number;
+  referenceHigh?: number;
+  notes: string;
+  sourceRecordId?: string;
+  sourceRecordTitle?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+export type HealthMeasurementInput = Pick<
+  HealthMeasurement,
+  | "name"
+  | "value"
+  | "unit"
+  | "measuredAt"
+  | "category"
+  | "referenceLow"
+  | "referenceHigh"
+  | "notes"
+  | "sourceRecordId"
+>;
+export type MeasurementRangeStatus = "low" | "within" | "high" | "unknown";
+
+/** Groups only measurements with the same reviewed name and unit. */
+export function measurementGroupKey(name: string, unit: string) {
+  const normalize = (value: string) =>
+    value.normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase("en");
+  return `${normalize(name)}::${normalize(unit)}`;
+}
+
+/** Interprets only patient-entered report ranges; it is not clinical advice. */
+export function measurementRangeStatus(
+  measurement: Pick<HealthMeasurement, "value" | "referenceLow" | "referenceHigh">,
+): MeasurementRangeStatus {
+  if (measurement.referenceLow === undefined && measurement.referenceHigh === undefined)
+    return "unknown";
+  if (measurement.referenceLow !== undefined && measurement.value < measurement.referenceLow)
+    return "low";
+  if (measurement.referenceHigh !== undefined && measurement.value > measurement.referenceHigh)
+    return "high";
+  return "within";
+}
 export type DoctorProfile = {
   id: string;
   email: string;
@@ -291,6 +346,26 @@ export const revokeShare = (share: RecordShare, event: ShareEvent) =>
   postData("revokeShare", { share, event });
 export const listContributions = () =>
   getData<DoctorContribution[]>("contributions");
+export const listMeasurements = () =>
+  request("/api/measurements")
+    .then((response) => response.json())
+    .then((value) => value as HealthMeasurement[]);
+export const createMeasurement = (value: HealthMeasurementInput) =>
+  request("/api/measurements", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(value),
+  }).then((response) => response.json() as Promise<HealthMeasurement>);
+export const updateMeasurement = (id: string, value: HealthMeasurementInput) =>
+  request("/api/measurements", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, ...value }),
+  }).then((response) => response.json() as Promise<HealthMeasurement>);
+export const deleteMeasurement = (id: string) =>
+  request(`/api/measurements?id=${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  }).then(() => undefined);
 export const listDoctorContributions = async () =>
   (await (
     await request("/api/contributions?scope=doctor", undefined, false)

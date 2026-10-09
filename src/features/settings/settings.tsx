@@ -15,6 +15,7 @@ import {
   RotateCcw,
   ShieldCheck,
   UploadCloud,
+  TrendingUp,
 } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { DossierNav } from "@/components/dossier-nav";
@@ -179,6 +180,7 @@ export function SettingsPage() {
         <section className="backup-overview" aria-label="Dossier backup status">
           <article><Database size={20} /><strong>{status?.counts.records ?? "—"}</strong><span>Records</span></article>
           <article><FileArchive size={20} /><strong>{status?.counts.files ?? "—"}</strong><span>Original files</span></article>
+          <article><TrendingUp size={20} /><strong>{status?.counts.measurements ?? "—"}</strong><span>Measurements</span></article>
           <article><HardDrive size={20} /><strong>{status ? formatBytes(status.totalBytes) : "—"}</strong><span>File size</span></article>
           <article><History size={20} /><strong>{status?.lastBackupAt ? formatShortDate(status.lastBackupAt) : "Never"}</strong><span>Last export</span></article>
         </section>
@@ -236,7 +238,7 @@ export function SettingsPage() {
             <div className="restore-mode-grid">
               <label className={mode === "merge" ? "selected" : ""}>
                 <input type="radio" name="restore-mode" checked={mode === "merge"} onChange={() => { setMode("merge"); setAcknowledged(false); }} />
-                <Database size={19} /><span><strong>Merge safely</strong><small>Add {inspection.comparison.newRecords} missing records; keep {inspection.comparison.conflictingRecords} current conflicts.</small></span>
+                <Database size={19} /><span><strong>Merge safely</strong><small>Add {inspection.comparison.newRecords} records and {inspection.comparison.newMeasurements} measurements; keep current ID conflicts.</small></span>
               </label>
               <label className={mode === "replace" ? "selected danger" : "danger"}>
                 <input type="radio" name="restore-mode" checked={mode === "replace"} onChange={() => { setMode("replace"); setAcknowledged(false); }} />

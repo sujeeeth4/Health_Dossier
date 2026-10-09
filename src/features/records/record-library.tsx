@@ -7,6 +7,7 @@ import {
   ArrowDownToLine,
   ArrowLeft,
   CalendarDays,
+  ChartNoAxesCombined,
   CircleCheck,
   ClipboardCheck,
   FileImage,
@@ -1408,6 +1409,12 @@ export function RecordLibrary() {
                 </div>
               )}
               <div className="modal-actions view-actions">
+                <Link
+                  className="button button-outline"
+                  href={`/trends?record=${encodeURIComponent(selected.id)}`}
+                >
+                  <ChartNoAxesCombined size={16} /> Track a value
+                </Link>
                 <button
                   className="button button-outline"
                   onClick={() => beginEdit(selected)}

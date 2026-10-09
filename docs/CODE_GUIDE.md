@@ -23,9 +23,10 @@ Route files in `src/app/` are intentionally thin. They import screen components 
 | ------------------------------------ | ----------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `/summary`                           | `HealthSummaryPage`           | Patient details, allergies, conditions, medications, and emergency contact                                        |
 | `/records`                           | `RecordLibrary`               | Local file upload, simulated extraction review, structured metadata, search, and a timeline with accepted doctor notes |
+| `/trends`                            | `TrendsPage`                  | Patient-reviewed measurements, unit-safe grouping, accessible charts, reference ranges, and record provenance          |
 | `/collections`                       | `CareCollectionsPage`         | Groups records into care journeys                                                                                 |
 | `/collections/[id]`                  | `CareCollectionDetail`        | Collection timeline, notes, and membership                                                                        |
-| `/visit-pack`                        | `VisitPackPage`               | Builds a print-friendly appointment overview with patient-controlled accepted doctor notes                        |
+| `/visit-pack`                        | `VisitPackPage`               | Builds a print-friendly appointment overview with selected trends and patient-controlled accepted doctor notes    |
 | `/sharing`                           | `SharingPage`                 | Simulated consent, expiry, contribution review, revocation, and activity history                                  |
 | `/doctor/login` and `/doctor/signup` | `DoctorLogin`, `DoctorSignup` | Browser-local credentials and simulated professional verification                                                 |
 | `/doctor`                            | `DoctorPortal`                | Active grants, shared-record access, structured consultation submission, and doctor activity events              |
@@ -39,7 +40,7 @@ Feature components call `src/lib/records.ts`; they should not use `fetch` or fil
 
 The local data directory contains:
 
-- `database.json`: patient settings, metadata, collections, doctor profiles and credential hashes, shares, doctor contributions, and activity.
+- `database.json`: patient settings, record metadata, structured measurements, collections, doctor profiles and credential hashes, shares, doctor contributions, and activity.
 - `database.json.bak`: the previous valid database write.
 - `sessions.json`: hashed, expiring session tokens.
 - `uploads/`: original PDFs and images, addressed internally by record ID.
@@ -54,7 +55,9 @@ Patient and doctor sessions use separate HTTP-only cookies. The doctor portal an
 
 Doctor consultation notes use the dedicated `/api/contributions` route. The server derives doctor identity from the authenticated session, validates the grant and linked record, and writes each submission or patient decision together with its audit event. Submitted notes are immutable; only accepted notes are presented in the patient timeline and Visit Pack.
 
-Backup routes under `/api/backups` require the patient session and same-origin requests. `src/server/backup.ts` writes a versioned gzipped tar stream, encrypts it with AES-256-GCM using a PBKDF2-derived key, verifies authenticated ciphertext and SHA-256 file checksums during inspection, and stages every restore before swapping local data. Archives contain credential hashes but never `sessions.json` or raw passwords.
+Patient-entered measurements use the dedicated `/api/measurements` route. The server validates numeric values, dates, report ranges, and optional record links. Presentation code groups by normalized metric name and unit, derives status only from supplied limits, and never converts units or invents clinical ranges.
+
+Backup routes under `/api/backups` require the patient session and same-origin requests. `src/server/backup.ts` writes a versioned gzipped tar stream, encrypts it with AES-256-GCM using a PBKDF2-derived key, verifies authenticated ciphertext and SHA-256 file checksums during inspection, and stages every restore before swapping local data. Container format 1 accepts database versions 2 and 3; older archives receive an empty measurements collection during inspection. Archives contain credential hashes but never `sessions.json` or raw passwords.
 
 `src/lib/legacy-indexeddb.ts` exists only for the explicit one-time migration. New feature code must not write to IndexedDB.
 

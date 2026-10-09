@@ -12,6 +12,12 @@
   <img src="docs/images/landing-full.png" alt="Full-page screenshot of the Health Dossier landing page" width="100%" />
 </details>
 
+## Understand health trends
+
+Record reviewed laboratory results, vital signs, and body measurements exactly as they appear in a report. Health Trends keeps incompatible units separate, shows patient-supplied reference ranges, links values back to original records, and makes selected metrics available to the Visit Pack without offering diagnosis or treatment advice.
+
+![Health Dossier health trends dashboard with a reviewed HbA1c series](docs/images/trends-screen.png)
+
 ## Prepare for an appointment
 
 Build a private, clinician-friendly visit pack from the health summary and selected records. Every section can be reviewed before printing, and care notes stay excluded unless they are deliberately added.
@@ -44,10 +50,12 @@ Create a password-protected `.hdbak` archive from Settings. Every referenced ori
 - See which suggested details were corrected during the required review step.
 - Search and filter your library, then preview or download a document.
 - Edit record details or remove a record when you no longer need it.
+- Track structured measurements over time with accessible charts and source-record provenance.
+- Label readings against optional report-provided ranges without automatic clinical interpretation.
 - Keep a health summary with medications, allergies, conditions, blood type, emergency contact, and care notes.
 - Browse records as a searchable library or a year-by-year health timeline.
 - Group related records into care collections with private notes and their own timelines.
-- Prepare a visit pack with selected records, medications, allergies, conditions, and emergency details.
+- Prepare a visit pack with selected records, health trends, medications, allergies, conditions, and emergency details.
 - Print the pack or save it as a PDF without uploading health information.
 - Grant simulated, time-limited doctor access with explicit permissions and immediate revocation.
 - Mark sensitive records, review sharing activity, and keep those controls stored locally.
@@ -73,7 +81,7 @@ Open **http://127.0.0.1:3000** and select **Get started**.
 
 ## How this version stores records
 
-The Next.js server listens only on `127.0.0.1`. By default, structured data is stored as readable JSON in `data/database.json`, original documents are stored in `data/uploads/`, and the previous valid database write is retained as `data/database.json.bak`. Runtime data is ignored by Git and never sent to a cloud service. Set `HEALTH_DOSSIER_DATA_DIR` in an ignored `.env.local` file to keep private runtime data in another local folder, such as `sensi/`.
+The Next.js server listens only on `127.0.0.1`. By default, structured data—including measurements and their source links—is stored as readable JSON in `data/database.json`, original documents are stored in `data/uploads/`, and the previous valid database write is retained as `data/database.json.bak`. Runtime data is ignored by Git and never sent to a cloud service. Set `HEALTH_DOSSIER_DATA_DIR` in an ignored `.env.local` file to keep private runtime data in another local folder, such as `sensi/`.
 
 Patient and doctor access use HTTP-only local cookies. Doctor passwords are stored as salted PBKDF2 hashes, but this remains a local demonstration—not production authentication, authoritative medical-license verification, or a regulated clinical-note system. Anyone who can read files from this macOS account can read the plaintext health data. Back up the complete `data/` directory together.
 

@@ -25,6 +25,12 @@ test("exports, inspects, merges, replaces, and rolls back an encrypted dossier",
   page,
 }) => {
   await addRecord(page);
+  await page.goto("/trends");
+  await page.getByRole("button", { name: "Add your first measurement" }).click();
+  await page.getByLabel(/Metric name/).fill("HbA1c");
+  await page.getByLabel(/^Value/).fill("5.5");
+  await page.getByLabel(/^Unit/).fill("%");
+  await page.getByRole("dialog").getByRole("button", { name: "Add measurement" }).click();
   await page.goto("/settings");
   await expect(page.getByRole("heading", { name: "Backup & recovery" })).toBeVisible();
   const exportCard = page.locator(".settings-card").filter({
@@ -45,6 +51,10 @@ test("exports, inspects, merges, replaces, and rolls back an encrypted dossier",
   await page.getByRole("button", { name: "Edit details" }).click();
   await page.getByPlaceholder("e.g. Annual blood test").fill("Current version");
   await page.getByRole("button", { name: "Save changes" }).click();
+  await page.goto("/trends");
+  await page.getByLabel(/Edit HbA1c/).click();
+  await page.getByLabel(/^Value/).fill("6.2");
+  await page.getByRole("button", { name: "Save changes" }).click();
 
   await page.goto("/settings");
   const restoreCard = page.locator(".settings-card").filter({
@@ -54,13 +64,15 @@ test("exports, inspects, merges, replaces, and rolls back an encrypted dossier",
   await restoreCard.getByLabel("Backup passphrase").fill("StrongBackup123");
   await restoreCard.getByRole("button", { name: "Inspect backup" }).click();
   await expect(page.getByRole("heading", { name: "Validated backup" })).toBeVisible();
-  await expect(page.getByText(/keep 1 current conflicts/i)).toBeVisible();
+  await expect(page.getByText(/keep current ID conflicts/i)).toBeVisible();
   await page.getByRole("checkbox", { name: /I understand/ }).check();
   await page.getByRole("button", { name: "Merge backup" }).click();
   await expect(page.getByText("Backup merged. Current conflicts were kept.")).toBeVisible();
 
   await page.goto("/records");
   await expect(page.getByRole("button", { name: "Current version", exact: true })).toBeVisible();
+  await page.goto("/trends");
+  await expect(page.locator(".trend-card-grid")).toContainText("6.2");
 
   await page.goto("/settings");
   await restoreCard.locator('input[type="file"]').setInputFiles(archivePath!);
@@ -73,6 +85,8 @@ test("exports, inspects, merges, replaces, and rolls back an encrypted dossier",
 
   await page.goto("/records");
   await expect(page.getByRole("button", { name: "Backup original", exact: true })).toBeVisible();
+  await page.goto("/trends");
+  await expect(page.locator(".trend-card-grid")).toContainText("5.5");
   await page.goto("/doctor/login");
   await page.getByRole("button", { name: /Use the verified demo account/ }).click();
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
@@ -87,6 +101,8 @@ test("exports, inspects, merges, replaces, and rolls back an encrypted dossier",
   await expect(page.getByText("Recovery snapshot restored.")).toBeVisible();
   await page.goto("/records");
   await expect(page.getByRole("button", { name: "Current version", exact: true })).toBeVisible();
+  await page.goto("/trends");
+  await expect(page.locator(".trend-card-grid")).toContainText("6.2");
 });
 
 test.describe("mobile backup settings", () => {
